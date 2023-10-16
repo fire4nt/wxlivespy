@@ -1,0 +1,18 @@
+{
+  "name": "wxlive-spy",
+  "version": "2023.1016.1956",
+  "description": "微信视频号直播间弹幕信息抓取工具",
+  "license": "MIT",
+  "author": {
+    "name": "fire4nt",
+    "email": "fire4nt.soft@gmail.com",
+    "url": "https://github.com/fire4nt"
+  },
+  "main": "./dist/main/main.js",
+  "scripts": {
+    "rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "postinstall": "npm run rebuild && npm run link-modules",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
+  },
+  "dependencies": {}
+}

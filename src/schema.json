@@ -1,0 +1,192 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": "ForwardData",
+    "properties": {
+        "original_url": {
+            "type": "string",
+            "description": "The original url of the request"
+        },
+        "original_body": {
+            "type": "string",
+            "description": "The original body of the response"
+        },
+        "decoded_data": {
+            "type": "object",
+            "description": "从 original_body 中解析出来的业务数据",
+            "properties": {
+                "host_info": {
+                    "$ref": "#/definitions/HostInfo",
+                    "description": "主播信息"
+                },
+                "live_info": {
+                    "$ref": "#/definitions/LiveInfo",
+                    "description": "直播间信息"
+                },
+                "events": {
+                    "type": "array",
+                    "description": "直播间消息",
+                    "items": {
+                        "$ref": "#/definitions/LiveMessage"
+                    }
+                }
+            },
+            "required": [
+                "host_info",
+                "live_info",
+                "events"
+            ]
+        }
+    },
+    "required": [
+        "original_url",
+        "original_body",
+        "decoded_data"
+    ],
+    "definitions": {
+        "HostInfo": {
+            "type": "object",
+            "properties": {
+                "wechat_uin": {
+                    "type": "string",
+                    "description": "从原始请求的 header中获取，可能是主播的微信号（用这个ID作为直播间的唯一标识）",
+                    "default": ""
+                },
+                "finder_username": {
+                    "type": "string",
+                    "description": "从原始请求的 body 中获取",
+                    "default": ""
+                }
+            },
+            "required": [
+                "wechat_uin",
+                "finder_username"
+            ]
+        },
+        "LiveInfo": {
+            "type": "object",
+            "properties": {
+                "wechat_uin": {
+                  "type": "string",
+                  "description": "从原始请求的 header中获取，可能是主播的微信号（用这个ID作为直播间的唯一标识）",
+                  "default": ""
+                },
+                "live_id": {
+                    "type": "string",
+                    "description": "直播间ID",
+                    "default": ""
+                },
+                "online_count": {
+                    "type": "number",
+                    "description": "直播间在线人数",
+                    "default": 0
+                },
+                "start_time": {
+                    "type": "number",
+                    "description": "直播间开始时间，unix时间戳",
+                    "default": 0
+                },
+                "like_count": {
+                    "type": "number",
+                    "description": "直播间点赞数",
+                    "default": 0
+                },
+                "reward_total_amount_in_wecoin": {
+                    "type": "number",
+                    "description": "直播间打赏总金额，单位为微信币",
+                    "default": 0
+                }
+            },
+            "required": [
+                "wechat_uin",
+                "live_id",
+                "online_count",
+                "start_time",
+                "like_count",
+                "reward_total_amount_in_wecoin"
+            ]
+        },
+        "LiveMessage": {
+            "type": "object",
+            "properties": {
+                "msg_time": {
+                  "type": "number",
+                  "description": "收到消息的unix时间戳",
+                  "default": 0
+                },
+                "decoded_type": {
+                    "type": "string",
+                    "description": "解析出来的消息类型: comment, enter, gift, like, enter, levelup, unknown",
+                    "default": ""
+                },
+                "msg_id": {
+                    "type": "string",
+                    "default": ""
+                },
+                "sec_openid": {
+                    "type": "string",
+                    "description": "经过加密的用户的微信openid，同一个用户在同一个主播的不同直播场次会变化",
+                    "default": ""
+                },
+                "nickname": {
+                    "type": "string",
+                    "default": ""
+                },
+                "seq": {
+                    "type": "number",
+                    "description": "事件在直播间发生的消息序号，从1开始，递增。可能会重复发送，服务器收到之后要自己去重。",
+                    "default": 0
+                },
+                "content": {
+                    "type": "string",
+                    "default": "xxxx"
+                },
+                "msg_sub_type": {
+                    "type": "string",
+                    "description": "从原始请求的 body 中获取, data.msgList[].type 或者 data.appMsgList[].msgType",
+                    "default": ""
+                },
+                "sec_gift_id": {
+                    "type": "string",
+                    "description": "可选， decoded_type 是 gift 或 combo_gift 时会有",
+                    "default": ""
+                },
+                "gift_num": {
+                    "type": "number",
+                    "description": "可选， decoded_type 是 gift 时会有",
+                    "default": 0
+                },
+                "gift_value": {
+                    "type": "number",
+                    "description": "可选， decoded_type 是 gift 时会有，单位为微信币。是本次送礼物的总价值，不是单价。",
+                    "default": 0
+                },
+                "combo_product_count": {
+                    "type": "number",
+                    "description": "可选， decoded_type 是 combo_gift 时会有",
+                    "default": 0
+                },
+                "from_level": {
+                    "type": "number",
+                    "description": "可选， decoded_type 是 levelup 时会有",
+                    "default": 0
+                },
+                "to_level": {
+                    "type": "number",
+                    "description": "可选， decoded_type 是 levelup 时会有",
+                    "default": 0
+                }
+            },
+            "required": [
+                "msg_time",
+                "decoded_type",
+                "msg_id",
+                "sec_openid",
+                "nickname",
+                "seq",
+                "content",
+                "msg_sub_type"
+            ]
+        }
+    }
+}
