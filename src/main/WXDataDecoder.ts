@@ -4,7 +4,9 @@ class WXDataDecoder {
   static liveInfoFromObject(o: any, hostInfo: HostInfo): LiveInfo {
     const li = {} as LiveInfo;
     li.wechat_uin = hostInfo.wechat_uin;
+    // TODO 这个值可能为 undefined
     li.live_id = o.liveId;
+    li.live_status = o.liveStatus;
     li.online_count = o.onlineCnt;
     li.start_time = o.startTime;
     li.like_count = o.likeCnt;
@@ -24,6 +26,9 @@ class WXDataDecoder {
       messageInstance.decoded_type = 'comment';
     } else if (o.type === 10005) {
       messageInstance.decoded_type = 'enter';
+    } else {
+      messageInstance.decoded_type = 'unknown';
+      messageInstance.original_data = o;
     }
     messageInstance.msg_id = o.clientMsgId;
     messageInstance.sec_openid = o.username;
@@ -70,6 +75,7 @@ class WXDataDecoder {
       messageInstance.to_level = giftPayload.to_level;
     } else {
       messageInstance.decoded_type = 'unknown';
+      messageInstance.original_data = o;
     }
     return messageInstance;
   }
@@ -121,11 +127,19 @@ class WXDataDecoder {
     requestHeaders: Record<string, string>,
     requestData: any,
     responseData: any,
-  ): DecodedData {
+  ): DecodedData | null {
     const decodedMessages = {} as DecodedData;
     decodedMessages.host_info = {} as HostInfo;
     decodedMessages.host_info.wechat_uin = requestHeaders['x-wechat-uin'];
     decodedMessages.host_info.finder_username = requestData.finderUsername;
+
+    // 可能出现 responseData.data.liveInfo 为 undefined 的情况
+    if (responseData.data.liveInfo === undefined) {
+      if (responseData.data.msgList.length === 0 && responseData.data.appMsgList.length === 0) {
+        return null;
+      }
+      throw new Error('liveInfo is undefined, but msgList or appMsgList is not empty');
+    }
 
     decodedMessages.live_info = WXDataDecoder.liveInfoFromObject(responseData.data.liveInfo, decodedMessages.host_info);
 
@@ -146,6 +160,28 @@ class WXDataDecoder {
       return acc;
     }, decodedMessages.events);
     return decodedMessages;
+  }
+
+  static getOpenIDFromMsgId(msgId: string): string | null {
+    // "msg_id": "finderlive_usermsg_comment_1F4EF489-B2CE-4B26-9002-3C7421EF8E78_o9hHn5apfwHL-RYrxochETS7NyDM",
+    // return 'o9hHn5apfwHL-RYrxochETS7NyDM'
+    // This id will not change between different live sessions
+    const idx = msgId.indexOf('_o9h');
+    if (idx >= 0) {
+      return msgId.substring(idx + 1, msgId.length);
+    }
+    return null;
+  }
+
+  static getSecOpenIDFromMsgId(msgId: string): string | null {
+    // "finderlive_appmsg_finderlive_commcommentnotify_d5addee68407c6d78fe2cc115ef3bcbf_2042584726460027863_1698657150_b2afac411cfad2d6f5fe69e1c2ec3901",
+    // return 'b2afac411cfad2d6f5fe69e1c2ec3901'
+    // split by '_' and return the last one, this is the sec_openid
+    const parts = msgId.split('_');
+    if (parts.length >= 1) {
+      return parts[parts.length - 1];
+    }
+    return null;
   }
 }
 

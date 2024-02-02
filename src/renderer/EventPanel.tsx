@@ -40,7 +40,7 @@ function EventPanel() {
                 type="text"
                 name="forward_url"
                 id="forward_url"
-                placeholder="转发地址，比如 http://localhost:8080"
+                placeholder="转发地址，比如 http://192.168.1.3:8080"
                 style={{ width: '400px' }}
                 value={forwardUrl}
                 onChange={(e) => {
@@ -109,7 +109,7 @@ window.electron.ipcRenderer.on('wxlive-event', (arg) => {
     decoded_type: castedEventData.decoded_type,
     content: castedEventData.content,
     seq: castedEventData.seq.toString(),
-    user_id: stringmask(castedEventData.sec_openid, 0, 16),
+    user_id: stringmask(castedEventData.decoded_openid, 0, 16),
   };
   if (setLogsFunc !== undefined) {
     setLogsFunc((prevLogs: any) => [...prevLogs, newLog].slice(-20));

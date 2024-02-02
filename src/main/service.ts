@@ -8,6 +8,8 @@ import WXLiveEventHandler from './interface';
 import { DecodedData, LiveInfo, LiveMessage } from '../CustomTypes';
 import EventForwarder from './EventForwarder';
 import SpyHttpServer from './httpserver';
+import IDCache from './idcache';
+import WXDataDecoder from './WXDataDecoder';
 
 class SpyService implements WXLiveEventHandler {
   private config: SpyConfig | null;
@@ -24,6 +26,8 @@ class SpyService implements WXLiveEventHandler {
 
   private httpServer: SpyHttpServer | null;
 
+  private idCache: IDCache;
+
   constructor(configFilePath: string, mainWindow: BrowserWindow) {
     this.config = new SpyConfig(configFilePath);
     this.config.load();
@@ -35,6 +39,7 @@ class SpyService implements WXLiveEventHandler {
     this.forwarder = new EventForwarder(this.config);
     this.currentStatus = null;
     this.httpServer = null;
+    this.idCache = new IDCache();
   }
 
   public setChromePath(chromePath: string) {
@@ -61,8 +66,10 @@ class SpyService implements WXLiveEventHandler {
 
   public onEvents(decodedData: DecodedData) {
     // TODO 这里可能会发送重复的数据，服务器要自己根据seq去重。
+    const dataWithDecodedOpenID = this.decodeOpenIDInEvents(decodedData);
+
     this.forwarder
-      ?.forwardData(decodedData)
+      ?.forwardData(dataWithDecodedOpenID)
       .then((response: any) => {
         log.info(`forward response: ${JSON.stringify(response)}`);
         return response;
@@ -168,6 +175,83 @@ class SpyService implements WXLiveEventHandler {
 
   private startListener(): void {
     this.listener?.start();
+  }
+
+  private decodeOpenIDInEvents(decodedData: DecodedData): DecodedData {
+    const data = {} as DecodedData;
+    data.host_info = decodedData.host_info;
+    data.live_info = decodedData.live_info;
+    data.live_info.nickname = this.idCache.get('auth', 'nickname') ?? 'unknown';
+    data.live_info.head_url = this.idCache.get('auth', 'avatar') ?? '';
+    data.events = [];
+    // 这里对于解析出来的events，需要进一步做数据解析，写入 decoded_openid
+    decodedData.events.forEach((o) => {
+      log.debug(`get event: ${o.seq} ${o.decoded_type} ${o.content}`);
+      if (o.decoded_type === 'enter' || o.decoded_type === 'comment') {
+        // 对于 enter 和 comment，需要解析出 _o9h openid，并缓存下来。
+        const decodedOpenID = WXDataDecoder.getOpenIDFromMsgId(o.msg_id);
+        if (decodedOpenID === null) {
+          log.error(`getOpenIDFromMsgId failed, msg_id: ${o.msg_id}`);
+          return;
+        }
+        o.decoded_openid = decodedOpenID;
+
+        const savedOpenID = this.idCache.get(decodedData.live_info.live_id, o.sec_openid);
+        if (savedOpenID === null) {
+          // 把 decodedData.live_info.live_id , o.sec_openid, o.decoded_openid 数据缓存下来。
+          this.idCache.set(decodedData.live_info.live_id, o.sec_openid, o.decoded_openid);
+        } else if (savedOpenID !== o.decoded_openid) {
+          // 如果缓存已经存在，要不要对比，如果不一致，要不要报警？
+          log.warn(`sec_openid ${o.sec_openid} has two decoded_openid: ${savedOpenID} and ${o.decoded_openid}`);
+          return;
+        }
+        data.events.push(o);
+      } else if (o.decoded_type === 'gift' || o.decoded_type === 'combogift') {
+        const decodedOpenID = this.idCache.get(decodedData.live_info.live_id, o.sec_openid);
+        if (decodedOpenID === null) {
+          // TODO 如果用户上来就发礼物，这里会找不到对应的 decodedOpenID，要怎么处理？
+          log.warn(`getOpenIDFromMsgId failed, msg_id: ${o.msg_id}`);
+          return;
+        }
+        o.decoded_openid = decodedOpenID;
+
+        const hexID = WXDataDecoder.getSecOpenIDFromMsgId(o.msg_id);
+        if (hexID === null) {
+          log.error(`getHexIDFromMsgId failed, msg_id: ${o.msg_id}`);
+          return;
+        }
+
+        const savedOpenID = this.idCache.get(decodedData.live_info.live_id, hexID);
+        if (savedOpenID === null) {
+          this.idCache.set(decodedData.live_info.live_id, hexID, o.decoded_openid);
+        } else if (savedOpenID !== o.decoded_openid) {
+          log.warn(`hexid ${hexID} has two decoded_openid: ${savedOpenID} and ${o.decoded_openid}`);
+          return;
+        }
+        data.events.push(o);
+      } else {
+        const decodedOpenID = this.idCache.get(decodedData.live_info.live_id, o.sec_openid);
+        if (decodedOpenID !== null) {
+          o.decoded_openid = decodedOpenID;
+          data.events.push(o);
+          return;
+        }
+        // 根据 sec_openid 找不到 decoded_openid，那么根据 msg_id 找一下。
+        const hexID = WXDataDecoder.getSecOpenIDFromMsgId(o.msg_id);
+        if (hexID === null) {
+          log.error(`getHexIDFromMsgId failed, msg_id: ${o.msg_id}`);
+          return;
+        }
+        const savedOpenID = this.idCache.get(decodedData.live_info.live_id, hexID);
+        if (savedOpenID === null) {
+          log.warn(`getOpenIDFromMsgId failed, msg_id: ${o.msg_id}`);
+          return;
+        }
+        o.decoded_openid = savedOpenID;
+        data.events.push(o);
+      }
+    });
+    return data;
   }
 }
 

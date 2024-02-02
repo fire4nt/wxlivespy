@@ -20,7 +20,7 @@ class SpyConfig {
   private defaultConfig: ConfigProps = {
     debug: false,
     spy_url: 'https://channels.weixin.qq.com/platform/live/liveBuild',
-    forward_url: 'http://localhost:8000/forward',
+    forward_url: 'http://127.0.0.1:8000/forward',
     gzip_forward_data: false,
     log_path: './logs',
     gift_and_comments_only: false,

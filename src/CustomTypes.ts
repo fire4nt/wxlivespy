@@ -50,6 +50,10 @@ export interface LiveMessage {
     combo_product_count?: number;
     content:              string;
     /**
+     * 解密后的用户的微信openid，同一个用户在同一个主播的不同直播场次不会变化
+     */
+    decoded_openid: string;
+    /**
      * 解析出来的消息类型: comment, enter, gift, like, enter, levelup, unknown
      */
     decoded_type: string;
@@ -75,6 +79,10 @@ export interface LiveMessage {
      */
     msg_time: number;
     nickname: string;
+    /**
+     * 可选，类型是 unknown 时会有，原始的消息内容
+     */
+    original_data?: { [key: string]: any };
     /**
      * 可选， decoded_type 是 gift 或 combo_gift 时会有
      */
@@ -114,6 +122,10 @@ export interface HostInfo {
  */
 export interface LiveInfo {
     /**
+     * 主播头像
+     */
+    head_url: string;
+    /**
      * 直播间点赞数
      */
     like_count: number;
@@ -121,6 +133,14 @@ export interface LiveInfo {
      * 直播间ID
      */
     live_id: string;
+    /**
+     * 直播间状态，1 表示直播中，2 表示直播结束
+     */
+    live_status: number;
+    /**
+     * 主播昵称
+     */
+    nickname: string;
     /**
      * 直播间在线人数
      */
@@ -318,6 +338,7 @@ const typeMap: any = {
     "LiveMessage": o([
         { json: "combo_product_count", js: "combo_product_count", typ: u(undefined, 3.14) },
         { json: "content", js: "content", typ: "" },
+        { json: "decoded_openid", js: "decoded_openid", typ: "" },
         { json: "decoded_type", js: "decoded_type", typ: "" },
         { json: "from_level", js: "from_level", typ: u(undefined, 3.14) },
         { json: "gift_num", js: "gift_num", typ: u(undefined, 3.14) },
@@ -326,6 +347,7 @@ const typeMap: any = {
         { json: "msg_sub_type", js: "msg_sub_type", typ: "" },
         { json: "msg_time", js: "msg_time", typ: 3.14 },
         { json: "nickname", js: "nickname", typ: "" },
+        { json: "original_data", js: "original_data", typ: u(undefined, m("any")) },
         { json: "sec_gift_id", js: "sec_gift_id", typ: u(undefined, "") },
         { json: "sec_openid", js: "sec_openid", typ: "" },
         { json: "seq", js: "seq", typ: 3.14 },
@@ -336,8 +358,11 @@ const typeMap: any = {
         { json: "wechat_uin", js: "wechat_uin", typ: "" },
     ], "any"),
     "LiveInfo": o([
+        { json: "head_url", js: "head_url", typ: "" },
         { json: "like_count", js: "like_count", typ: 3.14 },
         { json: "live_id", js: "live_id", typ: "" },
+        { json: "live_status", js: "live_status", typ: 3.14 },
+        { json: "nickname", js: "nickname", typ: "" },
         { json: "online_count", js: "online_count", typ: 3.14 },
         { json: "reward_total_amount_in_wecoin", js: "reward_total_amount_in_wecoin", typ: 3.14 },
         { json: "start_time", js: "start_time", typ: 3.14 },

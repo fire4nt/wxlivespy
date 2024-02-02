@@ -71,6 +71,11 @@
                   "description": "从原始请求的 header中获取，可能是主播的微信号（用这个ID作为直播间的唯一标识）",
                   "default": ""
                 },
+                "live_status": {
+                    "type": "number",
+                    "description": "直播间状态，1 表示直播中，2 表示直播结束",
+                    "default": ""
+                },
                 "live_id": {
                     "type": "string",
                     "description": "直播间ID",
@@ -95,15 +100,28 @@
                     "type": "number",
                     "description": "直播间打赏总金额，单位为微信币",
                     "default": 0
+                },
+                "nickname": {
+                    "type": "string",
+                    "description": "主播昵称",
+                    "default": ""
+                },
+                "head_url": {
+                    "type": "string",
+                    "description": "主播头像",
+                    "default": ""
                 }
             },
             "required": [
                 "wechat_uin",
                 "live_id",
+                "live_status",
                 "online_count",
                 "start_time",
                 "like_count",
-                "reward_total_amount_in_wecoin"
+                "reward_total_amount_in_wecoin",
+                "nickname",
+                "head_url"
             ]
         },
         "LiveMessage": {
@@ -126,6 +144,11 @@
                 "sec_openid": {
                     "type": "string",
                     "description": "经过加密的用户的微信openid，同一个用户在同一个主播的不同直播场次会变化",
+                    "default": ""
+                },
+                "decoded_openid": {
+                    "type": "string",
+                    "description": "解密后的用户的微信openid，同一个用户在同一个主播的不同直播场次不会变化",
                     "default": ""
                 },
                 "nickname": {
@@ -175,11 +198,17 @@
                     "type": "number",
                     "description": "可选， decoded_type 是 levelup 时会有",
                     "default": 0
+                },
+                "original_data": {
+                    "type": "object",
+                    "description": "可选，类型是 unknown 时会有，原始的消息内容",
+                    "default": {}
                 }
             },
             "required": [
                 "msg_time",
                 "decoded_type",
+                "decoded_openid",
                 "msg_id",
                 "sec_openid",
                 "nickname",
