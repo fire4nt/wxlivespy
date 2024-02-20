@@ -45,11 +45,6 @@ To package apps for the local platform:
 npm run package
 ```
 
-## Donations
-
-<img src="https://github.com/fire4nt/wxlivespy/blob/main/coffee.jpg" width="300" />
-
-
 ## License
 
 MIT
